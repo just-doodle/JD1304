@@ -251,7 +251,9 @@ uint16_t CPU::Addr_ABY() // Absolute Y
 uint16_t CPU::Addr_IND() // Indirect
 {
     uint16_t addr = FetchW();
+    uint16_t rrrrrrr = addr;
     addr = ReadW(addr);
+    printf("0x%04x --> 0x%04x\n", rrrrrrr, addr);
     return addr;
 }
 
@@ -1003,6 +1005,15 @@ void CPU::Execute(uint32_t cycles)
         PC = PopW();
         printf("IRET");
         break;
+    case ins.INP:
+        PC++;
+        printf("INP");
+        break;
+    case ins.AP2:
+        PC++;
+        PC++;
+        printf("AP2");
+        break;
     case ins.PHA:
     {
         PushB(A);
@@ -1227,15 +1238,19 @@ void CPU::Dump(char* msg)
 void CPU::run(int freq)
 {
     int cycles = 0;
-    while(true)
+    char c;
+    printf("Running CPU at %dHz\n", freq);
+    while(c != 'q')
     {
-        step();
-        cycles++;
-        if(cycles >= freq)
+        for(int i = 0; i < freq; i++)
         {
-            cycles = 0;
-            usleep(1000);
+            step();
+            cycles++;
+
+            if(cycles % 1000000 == 0)
+                printf("Cycles: %d\n", cycles);
         }
+        sleep(1);
     }
 }
 

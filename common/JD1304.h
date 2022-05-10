@@ -14,7 +14,7 @@
 #define SP_END 0x00
 #define SP_W_ADDR 0x0100
 #define RESET_VECTOR 0x8000
-#define CPU_CLOCK_FREQUENCY 10
+#define CPU_CLOCK_FREQUENCY 1
 
 #define JD1304_VERSION "1.1.0"
 
@@ -60,6 +60,8 @@ struct Instruction
     static constexpr uint8_t INY = 0x26;    // Increment Y | IMPL |
     static constexpr uint8_t DEX = 0x27;    // Decrement X | IMPL |
     static constexpr uint8_t DEY = 0x28;    // Decrement Y | IMPL |
+    static constexpr uint8_t INP = 0x29;    // Increment Program Counter | IMPL |
+    static constexpr uint8_t AP2 = 0x2A;    // Add 2 to program counter | IMPL |
     int NumInstructions = 40;
 };
 
