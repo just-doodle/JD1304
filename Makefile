@@ -10,7 +10,7 @@ INCLUDE = -I$(PWD)/common
 PROJECT = JD1304
 EXECUTABLE = $(PROJECT)
 EXECUTABLE_ARGS = examples/prg.bin step
-EXECUTABLE2_ARGS = test output.bin
+EXECUTABLE2_ARGS = examples/test output.bin
 
 MISC = RAM.bin \
 	*.dump
