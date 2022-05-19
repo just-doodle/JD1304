@@ -30,7 +30,11 @@ TSX
 
 // To print the definition of a macro
 @MCMP __ERROR__ 0
-@INFO EQUAL WARN = *__WARN__* ERROR = *__ERROR__*
+@INFO EQUAL WARN = *__WARN__* ERROR = *__ERROR__* VERSION = *__VERSION__*
+@ENDIF
+
+@MCMP __JDASM__ *TRUE*
+@INFO THIS IS JDASM derivative
 @ENDIF
 
 @INFO This is a info preprocessor

@@ -5,6 +5,8 @@
 #define CYN "\x1B[36m"
 #define RESET "\x1B[0m"
 
+#define VERSION "0.5.2"
+
 #define PRINTE(...) printf(RED, __VA_ARGS__, RESET);
 
 using namespace std;
@@ -53,6 +55,11 @@ void assemble(const char *filename, const char *output)
     vector<string> tokens;
     map<string, uint16_t> labels;
     map<string, string> definitions;
+
+    definitions["__VERSION__"] = VERSION;
+    definitions["__JDASM__"] = "1";
+    definitions["TRUE"] = "1";
+    definitions["FALSE"] = "0";
 
     int isDefined = 0;
     int isNDefined = 0;
