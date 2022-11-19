@@ -29,6 +29,13 @@ cd JD1304
 make run
 ```
 
+To run JDASM, run the following command:
+
+```bash
+cd JD1304
+make run_JDASM
+```
+
 To install the project, run the following command:
 
 ```bash
@@ -80,9 +87,6 @@ I: Interrupt - If the interrupt flag is set, the processor will be interrupted w
 ## TODO
 
 * Communication with the devices with the ports and INB/OUTB instructions.
-* Interrupts.
-* Assembly language.
-* Assembler
 * Disassembler
 * Modules
 * Refinement of the instructions.

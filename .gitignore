@@ -1,2 +1,7 @@
 .vscode
 .vscode/*
+*.dump
+*.o
+output.bin
+JD1304
+JDASM

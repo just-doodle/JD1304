@@ -16,7 +16,7 @@
 #define RESET_VECTOR 0x8000
 #define CPU_CLOCK_FREQUENCY 1
 
-#define JD1304_VERSION "1.1.0"
+#define JD1304_VERSION "2.0.0"
 
 struct Instruction
 {
@@ -55,15 +55,26 @@ struct Instruction
     static constexpr uint8_t INB = 0x21;    //! Not implemented INB | IMPL |
     static constexpr uint8_t OUTB = 0x21;   //! Not implemented OUTB | IMPL |
     static constexpr uint8_t CHAM = 0x23;   // Change Address Mode
-    static constexpr uint8_t EXT = 0x24;    //! Not implemented Exit
+    static constexpr uint8_t EXT = 0x24;    //! Exit
     static constexpr uint8_t INX = 0x25;    // Increment X | IMPL |
     static constexpr uint8_t INY = 0x26;    // Increment Y | IMPL |
     static constexpr uint8_t DEX = 0x27;    // Decrement X | IMPL |
     static constexpr uint8_t DEY = 0x28;    // Decrement Y | IMPL |
     static constexpr uint8_t INP = 0x29;    // Increment Program Counter | IMPL |
     static constexpr uint8_t AP2 = 0x2A;    // Add 2 to program counter | IMPL |
-    int NumInstructions = 40;
+    static constexpr uint8_t INT = 0x2B;    // Interrupt | IMPL |
+    int NumInstructions = 43;
 };
+
+typedef struct registers
+{
+    uint8_t A;
+    uint8_t X;
+    uint8_t Y;
+    uint8_t AM; 
+    uint8_t status;
+    uint16_t PC;
+}registers_t;
 
 class Memory
 {
@@ -78,16 +89,48 @@ public:
     Memory();
 };
 
+class InterruptHand
+{
+public:
+    virtual void handle(registers_t* regs);
+    virtual void init();
+};
+
+class INTERRUPT01 : public InterruptHand
+{
+public:
+    void handle(registers_t* regs);
+    void init();
+};
+
+class INTERRUPT02 : public InterruptHand
+{
+public:
+    void handle(registers_t* regs);
+    void init();
+};
+
+#define MAX_INTERRUPTS 256
+
 class CPU
 {
 private:
     Memory mem;
+
+    static constexpr uint8_t NegativeFlagBit            = 0b10000000;
+	static constexpr uint8_t OverflowFlagBit            = 0b01000000;
+	static constexpr uint8_t BreakFlagBit               = 0b000010000;
+	static constexpr uint8_t UnusedFlagBit              = 0b000100000;
+	static constexpr uint8_t InterruptDisableFlagBit    = 0b000000100;
+	static constexpr uint8_t ZeroBit                    = 0b0000000;
 
     // The main CPU Registers
     uint16_t PC; // Program counter of the CPU
     uint8_t SP; // Stack pointer of the CPU
     uint8_t status = 0x00; // Status register
     uint8_t AM; // Address mode of the current instruction
+
+    uint8_t INT; // Interrupt to be handled
 
     // Index CPU Registers
     uint8_t A;     // Accumalator register
@@ -106,6 +149,10 @@ private:
 
     uint32_t Cycles = 0x00;     // Cycles counter
     uint8_t opcode = 0x00;      // To store which opcode executed
+
+    InterruptHand* interrupt[MAX_INTERRUPTS]; // Array of interrupts
+
+    void addInterrupt(InterruptHand *interrupt, uint8_t interruptNumber);
 
     uint16_t StackADDR();
 

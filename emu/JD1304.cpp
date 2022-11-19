@@ -58,6 +58,39 @@ uint8_t& Memory::operator[](uint16_t Address)
 
 CPU::CPU()
 {
+    for(int i = 0; i < MAX_INTERRUPTS; i++)
+    {
+        interrupt[i] = (InterruptHand*)malloc(sizeof(InterruptHand));
+    }
+}
+
+void InterruptHand::handle(registers *regs)
+{
+    printf("Unhandled Interrupt!\n");
+}
+
+void InterruptHand::init()
+{
+
+}
+
+void INTERRUPT01::init()
+{
+    printf("IRQ 01 attached\n");
+}
+
+void INTERRUPT01::handle(registers_t* regs)
+{
+    switch(regs->X)
+    {
+    case 0x00:
+        printf("%c", regs->A);
+        break;
+    case 0x01:
+        system("clear");
+        break;
+    }
+
 }
 
 void CPU::ResetCPU()
@@ -68,6 +101,8 @@ void CPU::ResetCPU()
     X = 0;
     Y = 0;
     mem.init();
+    INTERRUPT01* int01 = new INTERRUPT01();
+    addInterrupt(int01, 0x01);
 }
 
 uint8_t CPU::FetchB()
@@ -133,6 +168,12 @@ void CPU::WriteW(uint16_t addr, uint16_t val)
 uint16_t CPU::StackADDR()
 {
     return SP_W_ADDR | SP;
+}
+
+void CPU::addInterrupt(InterruptHand* interrupt, uint8_t intNum)
+{
+    this->interrupt[intNum] = interrupt;
+    interrupt->init();
 }
 
 void CPU::PushB(uint8_t val)
@@ -280,6 +321,8 @@ void CPU::Execute(uint32_t cycles)
     uint8_t val;
     uint16_t res;
     uint16_t addr_abs;
+    uint16_t sum;
+    bool sign;
 
     switch (instruction)
     {
@@ -623,10 +666,15 @@ void CPU::Execute(uint32_t cycles)
             printf("ADD INY");
             break;
         }
-        A += tmp;
-        SetFlag(C, A & 0x100);
+
+        sign = !((A ^ tmp) & NegativeFlagBit);
+        sum = A;
+        sum += tmp;
+        A = (sum & 0xff);
         SetFlag(Z, A == 0);
-        SetFlag(N, A & 0x80);
+        SetFlag(N, (A & NegativeFlagBit) > 0);
+        SetFlag(C, sum > 0xff);
+        SetFlag(V, sign && ((A ^ tmp) & NegativeFlagBit));
         break;
     case ins.ADC:
         switch(AM)
@@ -676,197 +724,238 @@ void CPU::Execute(uint32_t cycles)
             printf("ADC INY");
             break;
         }
-        tmp += A + GetFlag(C);
-        SetFlag(C, tmp & 0x100);
-        SetFlag(Z, tmp == 0);
-        SetFlag(N, tmp & 0x80);
-        A = tmp;
+        sign = !((A ^ tmp) & NegativeFlagBit);
+        sum = A;
+        sum += tmp;
+        sum += GetFlag(C);
+        A = (sum & 0xff);
+        SetFlag(Z, A == 0);
+        SetFlag(N, (A & NegativeFlagBit) > 0);
+        SetFlag(C, sum > 0xff);
+        SetFlag(V, sign && ((A ^ tmp) & NegativeFlagBit));
         break;
     case ins.SUB:
         switch(AM)
         {
         case AM_IMM:
             tmp = FetchB();
+            printf("SUB IMM");
             break;
         case AM_ZP0:
             addr = Addr_ZP0();
             tmp = ReadB(addr);
+            printf("SUB ZP0");
             break;
         case AM_ZPX:
             addr = Addr_ZPX();
             tmp = ReadB(addr);
+            printf("SUB ZPX");
             break;
         case AM_ABS:
             addr = Addr_ABS();
             tmp = ReadB(addr);
+            printf("SUB ABS");
             break;
         case AM_ABX:
             addr = Addr_ABX();
             tmp = ReadB(addr);
+            printf("SUB ABX");
             break;
         case AM_ABY:
             addr = Addr_ABY();
             tmp = ReadB(addr);
+            printf("SUB ABY");
             break;
         case AM_IND:
             addr = Addr_IND();
             tmp = ReadB(addr);
+            printf("SUB IND");
             break;
         case AM_INX:
             addr = Addr_IZX();
             tmp = ReadB(addr);
+            printf("SUB INX");
             break;
         case AM_INY:
             addr = Addr_IZY();
             tmp = ReadB(addr);
+            printf("SUB INY");
             break;
         }
-        tmp = A - tmp;
-        SetFlag(C, tmp & 0x100);
-        SetFlag(Z, tmp == 0);
-        SetFlag(V, (A ^ tmp) & (A ^ tmp) & 0x80);
-        SetFlag(N, tmp & 0x80);
-        A = tmp;
-        printf("SUB");
+        sign = !((A ^ ~tmp) & NegativeFlagBit);
+        sum = A;
+        sum += ~tmp;
+        A = (sum & 0xff);
+        SetFlag(Z, A == 0);
+        SetFlag(N, (A & NegativeFlagBit) > 0);
+        SetFlag(C, sum > 0xff);
+        SetFlag(V, sign && ((A ^ ~tmp) & NegativeFlagBit));
         break;
     case ins.SBC:
         switch(AM)
         {
         case AM_IMM:
             tmp = FetchB();
+            printf("SBC IMM");
             break;
         case AM_ZP0:
             addr = Addr_ZP0();
             tmp = ReadB(addr);
+            printf("SBC ZP0");
             break;
         case AM_ZPX:
             addr = Addr_ZPX();
             tmp = ReadB(addr);
+            printf("SBC ZPX");
             break;
         case AM_ABS:
             addr = Addr_ABS();
             tmp = ReadB(addr);
+            printf("SBC ABS");
             break;
         case AM_ABX:
             addr = Addr_ABX();
             tmp = ReadB(addr);
+            printf("SBC ABX");
             break;
         case AM_ABY:
             addr = Addr_ABY();
             tmp = ReadB(addr);
+            printf("SBC ABY");
             break;
         case AM_IND:
             addr = Addr_IND();
             tmp = ReadB(addr);
+            printf("SBC IND");
             break;
         case AM_INX:
             addr = Addr_IZX();
             tmp = ReadB(addr);
+            printf("SBC INX");
             break;
         case AM_INY:
             addr = Addr_IZY();
             tmp = ReadB(addr);
+            printf("SBC INY");
             break;
         }
-        tmp = A - tmp - GetFlag(C);
-        SetFlag(C, tmp & 0x100);
-        SetFlag(Z, tmp == 0);
-        SetFlag(V, (A ^ tmp) & (A ^ tmp) & 0x80);
-        SetFlag(N, tmp & 0x80);
-        A = tmp;
-        printf("SBC");
+        sign = !((A ^ ~tmp) & NegativeFlagBit);
+        sum = A;
+        sum += ~tmp;
+        sum += GetFlag(C);
+        A = (sum & 0xff);
+        SetFlag(Z, A == 0);
+        SetFlag(N, (A & NegativeFlagBit) > 0);
+        SetFlag(C, sum > 0xff);
+        SetFlag(V, sign && ((A ^ ~tmp) & NegativeFlagBit));
         break;
     case ins.AND:
         switch(AM)
         {
         case AM_IMM:
             tmp = FetchB();
+            printf("AND IMM");
             break;
         case AM_ZP0:
             addr = Addr_ZP0();
             tmp = ReadB(addr);
+            printf("AND ZP0");
             break;
         case AM_ZPX:
             addr = Addr_ZPX();
             tmp = ReadB(addr);
+            printf("AND ZPX");
             break;
         case AM_ABS:
             addr = Addr_ABS();
             tmp = ReadB(addr);
+            printf("AND ABS");
             break;
         case AM_ABX:
             addr = Addr_ABX();
             tmp = ReadB(addr);
+            printf("AND ABX");
             break;
         case AM_ABY:
             addr = Addr_ABY();
             tmp = ReadB(addr);
+            printf("AND ABY");
             break;
         case AM_IND:
             addr = Addr_IND();
             tmp = ReadB(addr);
+            printf("AND IND");
             break;
         case AM_INX:
             addr = Addr_IZX();
             tmp = ReadB(addr);
+            printf("AND INX");
             break;
 
         case AM_INY:
             addr = Addr_IZY();
             tmp = ReadB(addr);
+            printf("AND INY");
             break;
         }
         tmp &= A;
         SetFlag(Z, tmp == 0);
         SetFlag(N, tmp & 0x80);
         A = tmp;
-        printf("AND");
         break;
     case ins.OR:
         switch (AM)
         {
         case AM_IMM:
             tmp = FetchB();
+            printf("OR IMM");
             break;
         case AM_ZP0:
             addr = Addr_ZP0();
             tmp = ReadB(addr);
+            printf("OR ZP0");
             break;
         case AM_ZPX:
             addr = Addr_ZPX();
             tmp = ReadB(addr);
+            printf("OR ZPX");
             break;
         case AM_ABS:
             addr = Addr_ABS();
             tmp = ReadB(addr);
+            printf("OR ABS");
             break;
         case AM_ABX:
             addr = Addr_ABX();
             tmp = ReadB(addr);
+            printf("OR ABX");
             break;
         case AM_ABY:
             addr = Addr_ABY();
             tmp = ReadB(addr);
+            printf("OR ABY");
             break;
         case AM_IND:
             addr = Addr_IND();
             tmp = ReadB(addr);
+            printf("OR IND");
             break;
         case AM_INX:
             addr = Addr_IZX();
             tmp = ReadB(addr);
+            printf("OR INX");
             break;
 
         case AM_INY:
             addr = Addr_IZY();
             tmp = ReadB(addr);
+            printf("OR INY");
             break;
         }
         tmp |= A;
         SetFlag(Z, tmp == 0);
         SetFlag(N, tmp & 0x80);
         A = tmp;
-        printf("OR");
         break;
     case ins.NOR:
         switch (AM)
@@ -986,9 +1075,34 @@ void CPU::Execute(uint32_t cycles)
         printf("JZ");
         break;
     case ins.JMP:
-        addr_abs = FetchW();
+        switch(AM)
+        {
+        case AM_ABS:
+            addr_abs = Addr_ABS();
+            printf("JMP ABS");
+            break;
+        case AM_ABX:
+            addr_abs = Addr_ABX();
+            printf("JMP ABX");
+            break;
+        case AM_ABY:
+            addr_abs = Addr_ABY();
+            printf("JMP ABY");
+            break;
+        case AM_IND:
+            addr_abs = Addr_IND();
+            printf("JMP IND");
+            break;
+        case AM_INX:
+            addr_abs = Addr_IZX();
+            printf("JMP INX");
+            break;
+        case AM_INY:
+            addr_abs = Addr_IZY();
+            printf("JMP INY");
+            break;
+        }
         PC = addr_abs;
-        printf("JMP");
         break;
     case ins.JSR:
         addr_abs = FetchW();
@@ -1041,8 +1155,9 @@ void CPU::Execute(uint32_t cycles)
         printf("CHAM");
         break;
     case ins.EXT:
-        printf("EXT");
-        return;
+        printf("EXT\n");
+        Dump("Exited using EXT instruction!\n");
+        exit(0);
         break;
     case ins.INX:
         X++;
@@ -1166,6 +1281,11 @@ void CPU::Execute(uint32_t cycles)
         SetFlag(N, tmp & 0x80);
         printf("CPY");
         break;
+    case ins.INT:
+        INT = FetchB();
+        IRQ();
+        printf("INT %d", INT);
+        break;
     default:
         printf("Instruction 0x%02x not implemented. PC is 0x%04x\n", instruction, PC);
         break;
@@ -1181,7 +1301,14 @@ void CPU::IRQ()
         PushB(status);
         SetFlag(B, true);
         SetFlag(I, true);
-        PC = ReadW(0xFFFE);
+        registers_t regs;
+        regs.A = A;
+        regs.AM = AM;
+        regs.X = X;
+        regs.Y = Y;
+        regs.PC = PC;
+        regs.status = status;
+        interrupt[INT]->handle(&regs);
     }
 }
 
@@ -1191,7 +1318,14 @@ void CPU::NMI()
     PushB(status);
     SetFlag(B, true);
     SetFlag(I, true);
-    PC = ReadW(0xFFFA);
+    registers_t regs;
+    regs.A = A;
+    regs.AM = AM;
+    regs.X = X;
+    regs.Y = Y;
+    regs.PC = PC;
+    regs.status = status;
+    interrupt[INT]->handle(&regs);
 }
 
 void CPU::step()
@@ -1223,13 +1357,26 @@ void CPU::Dump(char* msg)
     fprintf(f, "Status: %02x\n", status);
     fprintf(f, "Cycles: %d\n\n", Cycles);
     fprintf(f, "Memory:\n");
+    bool x = false;
     for(int i = 0; i < 0xFFFF + 1; i++)
     {
+        if(i == PC)
+            x = true;
         if(i % 16 == 0)
             fprintf(f, "%04x: ", i);
         fprintf(f, "%02x ", mem[i]);
         if(i % 16 == 15)
-            fprintf(f, "\n");
+        {
+            if(x == true)
+            {
+                fprintf(f, "<-- PC row %d [0x%04x]\n", PC & 0x0F, PC);
+                x = false;
+            }
+            else
+            {
+                fprintf(f, "\n");
+            }
+        }
     }
     fprintf(f, "\n---------------------------------------------------------------------------------------------\n");
     fclose(f);

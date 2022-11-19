@@ -8,6 +8,8 @@
 
 System* sys = 0;
 
+
+
 void signal_handler(int sig)
 {
     printf("Got signal %d\n", sig);
@@ -16,12 +18,9 @@ void signal_handler(int sig)
     exit(0);
 }
 
-// opcode, op1, op2
-// 16bit addr = op2 << 8 | op1
-
 int main(int argc, char** argv)
 {
-    if(strcmp(argv[0], "jdasm") == 0 || strcmp(argv[0], "JDASM") == 0 || strcmp(argv[0], "./jdasm") == 0 || strcmp(argv[0], "./JDASM") == 0)
+    if(strstr(argv[0], "JDASM") != 0 || strstr(argv[0], "jdasm") != 0 || strcmp(argv[0], "jdasm") == 0 || strcmp(argv[0], "JDASM") == 0 || strcmp(argv[0], "./jdasm") == 0 || strcmp(argv[0], "./JDASM") == 0)
     {
         if(argc < 3)
         {
@@ -63,10 +62,10 @@ int main(int argc, char** argv)
         syst.load(data, size);
         char c;
 
-        //signal(SIGINT, signal_handler);
-        //signal(SIGTERM, signal_handler);
-        //signal(SIGQUIT, signal_handler);
-        //signal(SIGSEGV, signal_handler);
+        signal(SIGINT, signal_handler);
+        signal(SIGTERM, signal_handler);
+        signal(SIGQUIT, signal_handler);
+        signal(SIGSEGV, signal_handler);
 
         if(strcmp(argv[2], "run") == 0)
         {
